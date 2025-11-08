@@ -4,13 +4,13 @@ import pytest
 
 @pytest.fixture
 def sample_csv(tmp_path):
-    file_path = tmp_path / "sample.csv"
+    file_path = tmp_path / 'sample.csv'
     with open(file_path, 'w') as f:
         f.write(
-            "id,brand,price,rating\n"
-            "1,BrandA,100,4.5\n"
-            "2,BrandB,200,3.8\n"
-            "3,BrandA,150,4.7\n"
+            'id,brand,price,rating\n'
+            '1,BrandA,100,4.5\n'
+            '2,BrandB,200,3.8\n'
+            '3,BrandA,150,4.7\n'
         )
     return str(file_path)
 
@@ -42,7 +42,7 @@ def test_incorrect_args(capsys):
 
 def test_no_such_file(capsys):
     with pytest.raises(SystemExit) as exc_info:
-        main(["--files", "file1.csv"])
+        main(['--files', 'file1.csv'])
     captured = capsys.readouterr()
     assert exc_info.value.code != 0
     assert 'Файл file1.csv не найден. Составление отчета прекращено' in captured.out
@@ -50,7 +50,7 @@ def test_no_such_file(capsys):
 
 def test_unsupported_report(sample_csv, capsys):
     with pytest.raises(SystemExit) as exc_info:
-        main(["--files", sample_csv, "--report", "average-smth"])
+        main(['--files', sample_csv, '--report', 'average-smth'])
     captured = capsys.readouterr()
     assert exc_info.value.code != 0
     assert 'Такой тип отчета не поддерживается' in captured.out

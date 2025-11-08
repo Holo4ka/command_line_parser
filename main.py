@@ -49,7 +49,7 @@ def main(argv=None):
             table.append(row)
             i += 1
         table.sort(key=lambda x: -float(x[-1]))
-        print(tabulate(table, headers=table_headers, tablefmt="outline"))
+        print(tabulate(table, headers=table_headers, tablefmt='outline'))
     elif args.report == 'average-price':
         table_headers = ['', 'brand', 'price']
         table = []
@@ -60,11 +60,11 @@ def main(argv=None):
             table.append(row)
             i += 1
         table.sort(key=lambda x: -float(x[-1]))
-        print(tabulate(table, headers=table_headers, tablefmt="outline"))
+        print(tabulate(table, headers=table_headers, tablefmt='outline'))
     else:
         print('Такой тип отчета не поддерживается')
         sys.exit(-1)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
