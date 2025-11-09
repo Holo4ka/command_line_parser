@@ -42,10 +42,24 @@ def test_incorrect_args(capsys):
 
 def test_no_such_file(capsys):
     with pytest.raises(SystemExit) as exc_info:
-        main(['--files', 'file1.csv'])
+        main(['--files', 'file1.csv', '--report', 'average-rating'])
     captured = capsys.readouterr()
     assert exc_info.value.code != 0
     assert 'Файл file1.csv не найден. Составление отчета прекращено' in captured.out
+
+
+def test_no_report(sample_csv, capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(['--files', sample_csv])
+    captured = capsys.readouterr()
+    assert exc_info.value.code != 0
+    assert 'Пожалуйста, укажите тип отчета' in captured.out
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(['--files', sample_csv, '--report'])
+    captured = capsys.readouterr()
+    assert exc_info.value.code != 0
+    assert 'Пожалуйста, укажите тип отчета' in captured.out
 
 
 def test_unsupported_report(sample_csv, capsys):

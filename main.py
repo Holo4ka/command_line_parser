@@ -2,8 +2,10 @@ def parse(argv=None):
     import argparse
     import sys
     parser = argparse.ArgumentParser()
-    parser.add_argument('--files', nargs='*')
-    parser.add_argument('--report', default='average-rating')
+    parser.add_argument('--files', nargs='*',
+                        help='список файлов для анализа')
+    parser.add_argument('--report', nargs='?',
+                        help='тип отчета (поддерживаемые типы: average-rating, average-price')
     args, unknown = parser.parse_known_args(argv)
     if unknown:
         print('Получены неизвестные аргументы:')
@@ -22,6 +24,7 @@ def read_files(files):
     headers = None
     ratings = {}
     prices = {}
+    data = {}
     try:
         for file in files:
             with open(file) as f:
@@ -36,40 +39,47 @@ def read_files(files):
                     if brand not in ratings.keys():
                         ratings[brand] = [float(rating)]
                         prices[brand] = [int(price)]
+                        data[brand] = [(int(price), float(rating))]
                     else:
                         ratings[brand].append(float(rating))
                         prices[brand].append(int(price))
+                        data[brand].append((int(price), float(rating)))
     except FileNotFoundError as e:
         print(f'Файл {e.filename} не найден. Составление отчета прекращено')
         sys.exit(-1)
-    return {'ratings': ratings, 'prices': prices}
+    return data  # {'ratings': ratings, 'prices': prices}
 
 
 def calculate_average_rating(data):
-    info = data['ratings']
+    brands = data.keys()
+    brand_ratings = {}
+    for brand in brands:
+        brand_ratings[brand] = [elem[1] for elem in data[brand]]
     result = {}
-    for brand, ratings in info.items():
+    for brand, ratings in brand_ratings.items():
         result[brand] = sum(ratings) / len(ratings)
     return result
 
 
 def calculate_average_price(data):
-    info = data['prices']
+    brands = data.keys()
+    brand_ratings = {}
+    for brand in brands:
+        brand_ratings[brand] = [elem[0] for elem in data[brand]]
     result = {}
-    for brand, prices in info.items():
-        result[brand] = sum(prices) / len(prices)
+    for brand, ratings in brand_ratings.items():
+        result[brand] = sum(ratings) / len(ratings)
     return result
 
 
-def print_table(data, value_name='rating'):
+def print_table_single_column(data, value_name):
     from tabulate import tabulate
     table_headers = ['', 'brand', value_name]
     table = []
-
     sorted_data = sorted(data.items(), key=lambda x: -x[1])
 
-    for i, (brand, value) in enumerate(sorted_data, 1):
-        row = [str(i), brand, str(round(value, 2))]
+    for i, (brand, values) in enumerate(sorted_data, 1):
+        row = [str(i), brand, str(round(values, 2))]
         table.append(row)
 
     print(tabulate(table, headers=table_headers, tablefmt='outline'))
@@ -78,12 +88,14 @@ def print_table(data, value_name='rating'):
 REPORTS = {
     'average-rating': {
         'calculator': calculate_average_rating,
-        'value_name': 'rating'
+        'value_name': 'rating',
+        'printer': print_table_single_column
     },
     'average-price': {
         'calculator': calculate_average_price,
-        'value_name': 'price'
-    }
+        'value_name': 'price',
+        'printer': print_table_single_column
+    },
 }
 
 
@@ -92,6 +104,10 @@ def main(argv=None):
 
     args = parse(argv)
 
+    if not args.report:
+        print('Пожалуйста, укажите тип отчета')
+        sys.exit(-1)
+
     if args.report not in REPORTS:
         print(f'Отчет {args.report} не поддерживается. Доступные отчеты: {", ".join(REPORTS.keys())}')
         sys.exit(-1)
@@ -99,7 +115,7 @@ def main(argv=None):
     data = read_files(args.files)
     report_config = REPORTS[args.report]
     calculated_data = report_config['calculator'](data)
-    print_table(calculated_data, report_config['value_name'])
+    report_config['printer'](calculated_data, report_config['value_name'])
 
 
 if __name__ == '__main__':
