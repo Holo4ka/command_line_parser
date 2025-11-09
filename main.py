@@ -1,9 +1,6 @@
-def main(argv=None):
+def parse(argv=None):
     import argparse
     import sys
-    import csv
-    from tabulate import tabulate
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--files', nargs='*')
     parser.add_argument('--report', default='average-rating')
@@ -12,14 +9,21 @@ def main(argv=None):
         print('Получены неизвестные аргументы:')
         print(', '.join(unknown))
         sys.exit(-1)
-    headers = None
-    ratings = {}
-    prices = {}
     if not args.files:
         print('Файлы для отчета не предоставлены')
         sys.exit(-1)
+    return args
+
+
+def read_files(files):
+    import csv
+    import sys
+
+    headers = None
+    ratings = {}
+    prices = {}
     try:
-        for file in args.files:
+        for file in files:
             with open(file) as f:
                 reader = csv.reader(f, delimiter=',')
                 if headers is None:
@@ -38,32 +42,64 @@ def main(argv=None):
     except FileNotFoundError as e:
         print(f'Файл {e.filename} не найден. Составление отчета прекращено')
         sys.exit(-1)
+    return {'ratings': ratings, 'prices': prices}
 
-    if args.report == 'average-rating':
-        table_headers = ['', 'brand', 'rating']
-        table = []
-        i = 1
-        for brand in ratings.keys():
-            average_rating = sum(ratings[brand]) / len(ratings[brand])
-            row = [str(i), brand, str(round(average_rating, 2))]
-            table.append(row)
-            i += 1
-        table.sort(key=lambda x: -float(x[-1]))
-        print(tabulate(table, headers=table_headers, tablefmt='outline'))
-    elif args.report == 'average-price':
-        table_headers = ['', 'brand', 'price']
-        table = []
-        i = 1
-        for brand in prices.keys():
-            average_price = sum(prices[brand]) / len(prices[brand])
-            row = [str(i), brand, str(round(average_price, 2))]
-            table.append(row)
-            i += 1
-        table.sort(key=lambda x: -float(x[-1]))
-        print(tabulate(table, headers=table_headers, tablefmt='outline'))
-    else:
-        print('Такой тип отчета не поддерживается')
+
+def calculate_average_rating(data):
+    info = data['ratings']
+    result = {}
+    for brand, ratings in info.items():
+        result[brand] = sum(ratings) / len(ratings)
+    return result
+
+
+def calculate_average_price(data):
+    info = data['prices']
+    result = {}
+    for brand, prices in info.items():
+        result[brand] = sum(prices) / len(prices)
+    return result
+
+
+def print_table(data, value_name='rating'):
+    from tabulate import tabulate
+    table_headers = ['', 'brand', value_name]
+    table = []
+
+    sorted_data = sorted(data.items(), key=lambda x: -x[1])
+
+    for i, (brand, value) in enumerate(sorted_data, 1):
+        row = [str(i), brand, str(round(value, 2))]
+        table.append(row)
+
+    print(tabulate(table, headers=table_headers, tablefmt='outline'))
+
+
+REPORTS = {
+    'average-rating': {
+        'calculator': calculate_average_rating,
+        'value_name': 'rating'
+    },
+    'average-price': {
+        'calculator': calculate_average_price,
+        'value_name': 'price'
+    }
+}
+
+
+def main(argv=None):
+    import sys
+
+    args = parse(argv)
+
+    if args.report not in REPORTS:
+        print(f'Отчет {args.report} не поддерживается. Доступные отчеты: {", ".join(REPORTS.keys())}')
         sys.exit(-1)
+
+    data = read_files(args.files)
+    report_config = REPORTS[args.report]
+    calculated_data = report_config['calculator'](data)
+    print_table(calculated_data, report_config['value_name'])
 
 
 if __name__ == '__main__':

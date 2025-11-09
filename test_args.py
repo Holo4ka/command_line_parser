@@ -53,4 +53,4 @@ def test_unsupported_report(sample_csv, capsys):
         main(['--files', sample_csv, '--report', 'average-smth'])
     captured = capsys.readouterr()
     assert exc_info.value.code != 0
-    assert 'Такой тип отчета не поддерживается' in captured.out
+    assert 'Отчет average-smth не поддерживается' in captured.out

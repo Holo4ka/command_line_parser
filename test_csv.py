@@ -38,7 +38,7 @@ def two_samples_csv(tmp_path):
 
 def parse_report(output):
     data = {}
-    lines = output.split('\n')[3:]  # пропускаем заголовки
+    lines = output.split('\n')[3:]
     for line in lines:
         parts = line.split('|')
         if len(parts) >= 4:
