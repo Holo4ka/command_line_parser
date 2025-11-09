@@ -15,6 +15,14 @@ def sample_csv(tmp_path):
     return str(file_path)
 
 
+@pytest.fixture
+def sample_txt(tmp_path):
+    file_path = tmp_path / 'sample.txt'
+    with open(file_path, 'w') as f:
+        f.write('Text sample\nNew line')
+    return str(file_path)
+
+
 def test_no_args(capsys):
     with pytest.raises(SystemExit) as exc_info:
         main([])
@@ -46,6 +54,14 @@ def test_no_such_file(capsys):
     captured = capsys.readouterr()
     assert exc_info.value.code != 0
     assert 'Файл file1.csv не найден. Составление отчета прекращено' in captured.out
+
+
+def test_incorrect_file(sample_txt, capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(['--files', sample_txt, '--report', 'average-rating'])
+    captured = capsys.readouterr()
+    assert exc_info.value.code != 0
+    assert f'Файл {sample_txt} не поддерживается' in captured.out
 
 
 def test_no_report(sample_csv, capsys):

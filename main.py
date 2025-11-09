@@ -1,18 +1,22 @@
+class FileExtensionError(Exception):
+    def __init__(self, filename, *args):
+        super().__init__(*args)
+        self.filename = filename
+
+
 def parse(argv=None):
     import argparse
     import sys
     parser = argparse.ArgumentParser()
+    types = list(REPORTS.keys())
     parser.add_argument('--files', nargs='*',
                         help='список файлов для анализа')
     parser.add_argument('--report', nargs='?',
-                        help='тип отчета (поддерживаемые типы: average-rating, average-price')
+                        help=f'тип отчета (поддерживаемые типы: {types})')
     args, unknown = parser.parse_known_args(argv)
     if unknown:
         print('Получены неизвестные аргументы:')
         print(', '.join(unknown))
-        sys.exit(-1)
-    if not args.files:
-        print('Файлы для отчета не предоставлены')
         sys.exit(-1)
     return args
 
@@ -22,11 +26,11 @@ def read_files(files):
     import sys
 
     headers = None
-    ratings = {}
-    prices = {}
     data = {}
     try:
         for file in files:
+            if file.split('.')[-1] != 'csv':
+                raise FileExtensionError(file)
             with open(file) as f:
                 reader = csv.reader(f, delimiter=',')
                 if headers is None:
@@ -36,18 +40,17 @@ def read_files(files):
                 for row in reader:
                     row = row[1:]
                     brand, price, rating = row
-                    if brand not in ratings.keys():
-                        ratings[brand] = [float(rating)]
-                        prices[brand] = [int(price)]
+                    if brand not in data.keys():
                         data[brand] = [(int(price), float(rating))]
                     else:
-                        ratings[brand].append(float(rating))
-                        prices[brand].append(int(price))
                         data[brand].append((int(price), float(rating)))
     except FileNotFoundError as e:
         print(f'Файл {e.filename} не найден. Составление отчета прекращено')
         sys.exit(-1)
-    return data  # {'ratings': ratings, 'prices': prices}
+    except FileExtensionError as e:
+        print(f'Файл {e.filename} не поддерживается')
+        sys.exit(-1)
+    return data
 
 
 def calculate_average_rating(data):
@@ -103,6 +106,10 @@ def main(argv=None):
     import sys
 
     args = parse(argv)
+
+    if not args.files:
+        print('Файлы для отчета не предоставлены')
+        sys.exit(-1)
 
     if not args.report:
         print('Пожалуйста, укажите тип отчета')
